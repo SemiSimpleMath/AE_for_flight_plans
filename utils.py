@@ -1,9 +1,8 @@
 import torch
 import random
 
+
 def create_flight_plan_dict(s):
-
-
     d = {}
 
     for i, c in enumerate(s):
@@ -11,8 +10,6 @@ def create_flight_plan_dict(s):
 
     return d
 
-def create_char_list(s):
-    return s.split()
 
 def convert_string_flight_plan_to_torch(input):
     s = "NEWSC0123456789e"
@@ -20,22 +17,27 @@ def convert_string_flight_plan_to_torch(input):
     MAX_PLAN_LENGTH = 16
     CHAR_ENCODE_LENGTH = 16
 
-    result = torch.zeros(MAX_PLAN_LENGTH*CHAR_ENCODE_LENGTH)
+    torch_encoded = []
 
+    for i in range(MAX_PLAN_LENGTH):
+        result = torch.zeros(CHAR_ENCODE_LENGTH)
+        if i < len(input):
+            c = input[i]
+            loc = d[c]
 
-
-    for i, c in enumerate(input):
-        loc = d[c] + CHAR_ENCODE_LENGTH * i
+        else:
+            loc = d['0']
         result[loc] = 1
-
-    return result
-
+        result = (result - torch.mean(result)) / torch.std(result)
+        torch_encoded.append(result)
+    final = torch.stack(torch_encoded, 0)
+    return final
 
 
 # n[int]: the number of plans to generate
 # d the dictionary used to encode the flight plan
 # file[string]: the file to write the plans into
-def generate_flight_plans(n,d):
+def generate_flight_plans(n, d):
     MAX_PLAN_LENGTH = 16
     plans = []
     for i in range(n):
@@ -46,18 +48,18 @@ def generate_flight_plans(n,d):
 
         # first char is always a letter
 
-        r = random.randint(0,4)
+        r = random.randint(0, 4)
         c = d[r]
         plan += c
 
-        for i in range(plan_length-2):
-
-            r = random.randint(0, len(d)-1)
+        for i in range(plan_length - 2):
+            r = random.randint(0, len(d) - 1)
             plan += d[r]
 
         plan += 'e'
         plans.append(plan)
     return plans
+
 
 def write_plans(file_name, plans):
     import csv
@@ -66,20 +68,6 @@ def write_plans(file_name, plans):
         header = ["input", "target"]
         writer.writerow(header)
         for line in plans:
-            writer.writerow([line,line])
+            writer.writerow([line, line])
 
 
-
-"""
-
-input = 'N7S3E2e'
-
-convert_string_flight_plan_to_torch(d, input)
-
-
-s = "NEWSC0123456789e"
-d = list(s)
-plans = generate_flight_plans(1, d)
-
-write_plans("./data/flight_plans/plans1.csv", plans)
-"""
